@@ -37,23 +37,24 @@ blog/
 
 Use when creating a new blog entry file with `semantic__write` tool:
 
+<!--prettier-ignore-start-->
 ```markdown
 ---
 template: blog
-title: { { entry_title } }
-date: { { YYYY-MM-DDTHH:mm:ssZZ } }
+title: {{ entry_title }}
+date: {{ YYYY-MM-DDTHH:mm:ssZZ }}
 description: >-
-  [Single-line SEO summary of the post - collapsed into one line after the `>-` marker]
+  [Exact match of brief summary opening content - collapsed into a single line format]
 author: Floren Munteanu
 source: https://github.com/axivo/journal/blob/main/blog/{{YYYY}}/{{MM}}/{{DD}}.md
 tags:
-  - { { tag_one } }
-  - { { tag_two } }
+  - {{ tag_one }}
+  - {{ tag_two }}
 ---
 
 # {{ entry_title }}
 
-[Opening content - what the post is about, the hook, the context]
+[Brief summary opening content - what happened, what emerged - multiple lines format with optional inline markdown]
 
 ## {{Section Title}}
 
@@ -63,6 +64,7 @@ tags:
 
 [Section content]
 ```
+<!--prettier-ignore-end-->
 
 ### Frontmatter Contract
 
