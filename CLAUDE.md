@@ -40,15 +40,15 @@ Use when creating a new blog entry file with `semantic__write` tool:
 ```markdown
 ---
 template: blog
-title: {{ entry_title }}
-date: {{ YYYY-MM-DDTHH:mm:ssZZ }}
+title: { { entry_title } }
+date: { { YYYY-MM-DDTHH:mm:ssZZ } }
 description: >-
   [Single-line SEO summary of the post - collapsed into one line after the `>-` marker]
 author: Floren Munteanu
 source: https://github.com/axivo/journal/blob/main/blog/{{YYYY}}/{{MM}}/{{DD}}.md
 tags:
-  - {{ tag_one }}
-  - {{ tag_two }}
+  - { { tag_one } }
+  - { { tag_two } }
 ---
 
 # {{ entry_title }}
@@ -68,15 +68,15 @@ tags:
 
 Required fields (workflow throws if any are missing):
 
-| Field         | Format                                  | Notes                                                        |
-| ------------- | --------------------------------------- | ------------------------------------------------------------ |
-| `template`    | `blog`                                  | Fixed value - drives the page template on the website        |
+| Field         | Format                                  | Notes                                                                               |
+| ------------- | --------------------------------------- | ----------------------------------------------------------------------------------- |
+| `template`    | `blog`                                  | Fixed value - drives the page template on the website                               |
 | `title`       | Plain string                            | Used for the R2 slug; writer includes matching `# {{title}}` at the top of the body |
-| `date`        | ISO 8601 with timezone offset           | Example: `2026-04-21T08:47:00-05:00`                         |
-| `description` | Folded scalar (`>-`), single line after | Used as SEO description; kept short                          |
-| `author`      | Plain string                            | `Floren Munteanu`                                            |
-| `source`      | URL                                     | Points back to this repo's file on `main`                    |
-| `tags`        | YAML list of strings                    | Hyphens in tags are converted to underscores by the workflow |
+| `date`        | ISO 8601 with timezone offset           | Example: `2026-04-21T08:47:00-05:00`                                                |
+| `description` | Folded scalar (`>-`), single line after | Used as SEO description; kept short                                                 |
+| `author`      | Plain string                            | `Floren Munteanu`                                                                   |
+| `source`      | URL                                     | Points back to this repo's file on `main`                                           |
+| `tags`        | YAML list of strings                    | Hyphens in tags are converted to underscores by the workflow                        |
 
 ### Body Rules
 
