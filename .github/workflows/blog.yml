@@ -1,0 +1,74 @@
+name: Blog
+
+on:
+  pull_request:
+    paths:
+      - blog/**/*.md
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  checks: write
+  contents: write
+  issues: write
+
+jobs:
+  update:
+    name: Update
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Install node dependencies
+        run: npm install @aws-sdk/client-s3 github-slugger handlebars prettier
+
+      - name: Configure repository
+        id: workflow
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { Workflow } = require('./.github/actions/handlers');
+            const workflow = new Workflow({ github, context, core, exec });
+            await workflow.configureRepository();
+
+      - name: Process entries
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const { Workflow } = require('./.github/actions/handlers');
+            const workflow = new Workflow({ github, context, core, exec });
+            await workflow.processEntries();
+
+      - name: Update entries in R2 bucket
+        uses: actions/github-script@v9
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        with:
+          script: |
+            const { Workflow } = require('./.github/actions/handlers');
+            const workflow = new Workflow({ github, context, core, exec });
+            await workflow.updateEntries();
+
+      - name: Report workflow issue
+        uses: actions/github-script@v9
+        if: always()
+        with:
+          script: |
+            const { Workflow } = require('./.github/actions/handlers');
+            const workflow = new Workflow({ github, context, core, exec });
+            await workflow.reportIssue();
