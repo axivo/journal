@@ -190,8 +190,8 @@ class BucketService {
       }
       return componentLines.join('\n');
     });
-    entryContent = entryContent.replace(/\/blog\/(\d{4})\/(\d{2})\/(\d{2})\.md/g, `/${blogPrefix}/$1/$2/$3`);
-    entryContent = entryContent.replace(/\/blog\/(\d{4})\/(\d{2})\/media\//g, `/${blogPrefix}/$1/$2/`);
+    entryContent = entryContent.replace(/(?<![\w.\/-])\/blog\/(\d{4})\/(\d{2})\/(\d{2})\.md/g, `/${blogPrefix}/$1/$2/$3`);
+    entryContent = entryContent.replace(/(?<![\w.\/-])\/blog\/(\d{4})\/(\d{2})\/media\//g, `/${blogPrefix}/$1/$2/`);
     entryContent = entryContent.replace(/\n{3,}/g, '\n\n').trim();
     entryContent = entryContent.replace(/https:\/\/axivo\.com/g, '');
     return [{ frontmatter: fm, slug, title, body: entryContent, imports: imports.trim() }];
