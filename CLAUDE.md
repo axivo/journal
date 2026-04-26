@@ -79,7 +79,7 @@ Required fields (workflow throws if any are missing):
 | `author`      | Plain string                            | `Floren Munteanu`                                                                   |
 | `source`      | URL                                     | Points back to this repo's file on `main`                                           |
 | `tags`        | YAML list of strings                    | Hyphens in tags are converted to underscores by the workflow                        |
-| `features`    | YAML map of `type: [name]` lists        | Optional — declares precomputed renderer features for this entry                    |
+| `features`    | YAML map of `type: [name]` lists        | Optional - declares precomputed renderer features for this entry                    |
 
 ### Body Rules
 
