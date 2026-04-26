@@ -9,8 +9,29 @@ const { DeleteObjectCommand, DeleteObjectsCommand, ListObjectsV2Command, PutObje
 const { slug: githubSlug } = require('github-slugger');
 const { existsSync, readFileSync, readdirSync, statSync } = require('node:fs');
 const { basename, dirname, join } = require('node:path');
-const contentPrefix = 'src/content';
 const blogPrefix = 'blog';
+const contentPrefix = 'src/content';
+const features = {
+  syntax: [
+    'banner',
+    'bleed',
+    'button',
+    'callout',
+    'cards',
+    'collapse',
+    'featurecard',
+    'filetree',
+    'footnotes',
+    'hero',
+    'image',
+    'mermaid',
+    'steps',
+    'table',
+    'tabs',
+    'var',
+    'video'
+  ]
+};
 const mediaPrefix = 'public';
 
 /**
@@ -188,7 +209,7 @@ class BucketService {
     const lines = frontmatter.split('\n');
     for (const line of lines) {
       const match = line.match(/^(\w+): (.+)$/);
-      if (match && !['description', 'tags'].includes(match[1])) {
+      if (match && !['description', 'features', 'tags'].includes(match[1])) {
         metadata[match[1]] = match[2];
       }
     }
@@ -205,6 +226,30 @@ class BucketService {
     const descriptionMatch = frontmatter.match(/description: >-\n\s+(.+)/);
     if (descriptionMatch) {
       metadata.description = encodeURIComponent(descriptionMatch[1]);
+    }
+    const featuresMatch = frontmatter.match(/^features:\n((?:\s+.+\n?)+)/m);
+    if (featuresMatch) {
+      const pairs = [];
+      const typeBlocks = featuresMatch[1].matchAll(/^\s+(\w+):\n((?:\s+- .+\n?)+)/gm);
+      for (const typeMatch of typeBlocks) {
+        const type = typeMatch[1];
+        if (!features[type]) {
+          throw new Error(`Unknown feature type "${type}" in "${metadata.title}" entry (${filePath}). Valid types: ${Object.keys(features).map(t => `"${t}"`).join(', ')}`);
+        }
+        const names = typeMatch[2].trim().split('\n').map(n => n.replace(/^\s*-\s*/, '').trim());
+        for (const name of names) {
+          if (!features[type].includes(name)) {
+            throw new Error(`Unknown feature name "${type}:${name}" in "${metadata.title}" entry (${filePath}). Valid names for "${type}": ${features[type].map(n => `"${n}"`).join(', ')}`);
+          }
+          const pair = `${type}:${name}`;
+          if (!pairs.includes(pair)) {
+            pairs.push(pair);
+          }
+        }
+      }
+      if (pairs.length) {
+        metadata.features = pairs.sort().join(',');
+      }
     }
     for (const [key, value] of Object.entries(metadata)) {
       if (value.length > 2048) {
