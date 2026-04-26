@@ -18,6 +18,7 @@ const features = {
     'button',
     'callout',
     'cards',
+    'code',
     'collapse',
     'featurecard',
     'filetree',
@@ -233,13 +234,13 @@ class BucketService {
       const typeBlocks = featuresMatch[1].matchAll(/^\s+(\w+):\n((?:\s+- .+\n?)+)/gm);
       for (const typeMatch of typeBlocks) {
         const type = typeMatch[1];
-        if (!features[type]) {
-          throw new Error(`Unknown feature type "${type}" in "${metadata.title}" entry (${filePath}). Valid types: ${Object.keys(features).map(t => `"${t}"`).join(', ')}`);
-        }
         const names = typeMatch[2].trim().split('\n').map(n => n.replace(/^\s*-\s*/, '').trim());
+        if (!features[type]) {
+          throw new Error(`Unknown feature type '${type}:${names[0]}' in '${filePath}' entry`);
+        }
         for (const name of names) {
           if (!features[type].includes(name)) {
-            throw new Error(`Unknown feature name "${type}:${name}" in "${metadata.title}" entry (${filePath}). Valid names for "${type}": ${features[type].map(n => `"${n}"`).join(', ')}`);
+            throw new Error(`Unknown feature name '${type}:${name}' in '${filePath}' entry`);
           }
           const pair = `${type}:${name}`;
           if (!pairs.includes(pair)) {
