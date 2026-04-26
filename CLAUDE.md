@@ -79,12 +79,51 @@ Required fields (workflow throws if any are missing):
 | `author`      | Plain string                            | `Floren Munteanu`                                                                   |
 | `source`      | URL                                     | Points back to this repo's file on `main`                                           |
 | `tags`        | YAML list of strings                    | Hyphens in tags are converted to underscores by the workflow                        |
+| `features`    | YAML map of `type: [name]` lists        | Optional — declares precomputed renderer features for this entry                    |
 
 ### Body Rules
 
 - Start the body with `# {{title}}` matching the frontmatter `title`, followed by opening prose; use `##` and below for section headings
 - Relative links to other blog entries use `/blog/{{YYYY}}/{{MM}}/{{DD}}.md` form
 - Links to `https://axivo.com` website are stripped to relative paths automatically
+
+## Features
+
+Some renderer work — shiki syntax highlighting today, math and diagram caches in the future — is too expensive to do per request and too volatile to ship in the bundle. Authors opt entries into precomputation by declaring features in frontmatter. The workflow validates each `<type>:<name>` against the canonical list and writes the validated set as R2 custom metadata. The website's prebuild expands declarations into precomputed data inline in the per-collection manifest. Entries without a `features` block produce no precomputed output and render with safe-mdx defaults.
+
+### Syntax
+
+Use when the entry contains code that should be syntax-highlighted with shiki:
+
+```yaml
+features:
+  syntax:
+    - code
+```
+
+The `syntax` type accepts the following names:
+
+- `banner` — highlight code inside a `<Banner>` block
+- `bleed` — highlight code inside a `<Bleed>` block
+- `button` — highlight code inside or referenced by a `<Button>` element
+- `callout` — highlight code inside a GFM alert or `<Callout>` block
+- `cards` — highlight code inside a `<Cards>` grid
+- `code` — highlight fenced code blocks at the top level of the entry
+- `collapse` — highlight code inside a `<details>` block
+- `featurecard` — highlight code inside a `<FeatureCard>` or `<CardGrid>` block
+- `filetree` — highlight code inside a `<FileTree>` block
+- `footnotes` — highlight code inside footnote definitions
+- `hero` — highlight code inside a `<Hero>` landing block
+- `image` — highlight code referenced from an `<Image>` caption
+- `mermaid` — highlight code inside a fenced mermaid diagram
+- `steps` — highlight code inside a `<Steps>` block
+- `table` — highlight code inside table cells
+- `tabs` — highlight code inside a `<Tabs>` block
+- `var` — highlight code inside a `<Var>` inline reference
+- `video` — highlight code referenced from a `<Video>` caption
+
+> [!IMPORTANT]
+> Unknown type or name in the `features` block fails the workflow. The error message names the offending `<type>:<name>` pair and the file path. Add an entry to the canonical list in `.github/actions/services/Bucket.js` before authoring against a name that doesn't exist yet.
 
 ## MDX Components
 
@@ -165,3 +204,4 @@ When reviewing a draft before commit, verify:
 - ✅ Each MDX component block uses a valid v4 UUID and includes the import only on first occurrence per file
 - ✅ Media files exist under `blog/{{YYYY}}/{{MM}}/media/` and follow the `{{DD}}-{{slug}}.{{ext}}` naming
 - ✅ Internal links use `/blog/...` relative form, not `https://axivo.com/...`
+- ✅ If the entry needs precomputed rendering (e.g. syntax-highlighted code), the `features` block declares only valid `<type>:<name>` pairs from the canonical list
