@@ -70,12 +70,7 @@ class BucketService {
    * @returns {string} MDX content body
    */
   buildMdx(entry) {
-    const parts = [];
-    if (entry.imports) {
-      parts.push(entry.imports, '');
-    }
-    parts.push(entry.body, '');
-    return parts.join('\n');
+    return `${entry.body}\n`;
   }
 
   /**
@@ -149,7 +144,7 @@ class BucketService {
    *
    * @param {string} content - Raw blog file content
    * @param {string} filePath - Path to blog file for error reporting
-   * @returns {Array<{ frontmatter: string, slug: string, title: string, body: string, imports: string }>}
+   * @returns {Array<{ frontmatter: string, slug: string, title: string, body: string }>}
    */
   extractEntries(content, filePath) {
     const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n?/);
@@ -173,28 +168,12 @@ class BucketService {
     }
     let entryContent = body;
     entryContent = entryContent.replace(/<!--mdx-strip-start-->[\s\S]*?<!--mdx-strip-end-->\n?/g, '');
-    let imports = '';
-    entryContent = entryContent.replace(/<!--mdx-component-[a-f0-9-]+\n([\s\S]*?)-->/g, (_, block) => {
-      const lines = block.trim().split('\n');
-      const importLines = [];
-      const componentLines = [];
-      for (const line of lines) {
-        if (line.startsWith('import ')) {
-          importLines.push(line);
-        } else {
-          componentLines.push(line);
-        }
-      }
-      if (importLines.length) {
-        imports += importLines.join('\n') + '\n';
-      }
-      return componentLines.join('\n');
-    });
+    entryContent = entryContent.replace(/<!--mdx-component-[a-f0-9-]+\n([\s\S]*?)-->/g, (_, block) => block.trim());
     entryContent = entryContent.replace(/(?<![\w.\/-])\/blog\/(\d{4})\/(\d{2})\/(\d{2})\.md/g, `/${blogPrefix}/$1/$2/$3`);
     entryContent = entryContent.replace(/(?<![\w.\/-])\/blog\/(\d{4})\/(\d{2})\/media\//g, `/${blogPrefix}/$1/$2/`);
     entryContent = entryContent.replace(/\n{3,}/g, '\n\n').trim();
     entryContent = entryContent.replace(/https:\/\/axivo\.com/g, '');
-    return [{ frontmatter: fm, slug, title, body: entryContent, imports: imports.trim() }];
+    return [{ frontmatter: fm, slug, title, body: entryContent }];
   }
 
   /**
