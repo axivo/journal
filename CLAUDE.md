@@ -93,7 +93,7 @@ Some renderer work — shiki syntax highlighting today, math and diagram caches 
 
 ### Syntax
 
-Use when the entry contains code that should be syntax-highlighted with shiki:
+Use when the entry contains code that should be syntax-highlighted with `shiki`:
 
 ```yaml
 features:
@@ -127,7 +127,7 @@ The `syntax` type accepts the following names:
 
 ## MDX Components
 
-MDX components add rich functionality (images, videos, custom widgets). They are wrapped in `<!--mdx-component-{{uuid}}-->` blocks so the workflow can lift them into the final MDX and hoist any `import` statements to the top of the file.
+MDX components add rich functionality (images, videos, custom widgets). They are wrapped in `<!--mdx-component-{{uuid}}-->` blocks so the workflow can lift them into the final MDX uploaded to R2.
 
 > [!IMPORTANT]
 > The `<!--mdx-->` HTML comments must be included exactly as shown. The UUID must be a valid v4 UUID — the workflow validates it and fails the run on malformed IDs.
@@ -138,7 +138,6 @@ Use when adding an image to a blog entry:
 
 ```markdown
 <!--mdx-component-{{uuid}}
-import { Image } from "@axivo/website";
 <Image
   template="card"
   src="/blog/{{YYYY}}/{{MM}}/{{DD}}-{{image-title-slug}}.webp"
@@ -152,16 +151,12 @@ import { Image } from "@axivo/website";
 <!--mdx-strip-end-->
 ```
 
-> [!IMPORTANT]
-> For multiple image inserts in the same file, include the `import` statement only on the first one.
-
 ### MDX Video Insert
 
 Use when adding a video to a blog entry:
 
 ```markdown
 <!--mdx-component-{{uuid}}
-import { Video } from "@axivo/website";
 <Video src="/blog/{{YYYY}}/{{MM}}/{{DD}}-{{video-title-slug}}.mp4" />
 -->
 <!--mdx-strip-start-->
@@ -170,9 +165,6 @@ import { Video } from "@axivo/website";
 
 <!--mdx-strip-end-->
 ```
-
-> [!IMPORTANT]
-> For multiple video inserts in the same file, include the `import` statement only on the first one.
 
 ## Reference Links
 
