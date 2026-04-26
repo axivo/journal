@@ -95,39 +95,61 @@ Some renderer work — shiki syntax highlighting today, math and diagram caches 
 
 Use when the entry contains code that should be syntax-highlighted with `shiki`:
 
+<!-- prettier-ignore-start -->
 ```yaml
 features:
   syntax:
-    - code
+    - {{ name }}
 ```
+<!-- prettier-ignore-end -->
 
-The `syntax` type accepts the following names:
+The `syntax` type accepts the names listed below.
+
+#### JSX Components
 
 - `banner` — highlight code inside a `<Banner>` block
 - `bleed` — highlight code inside a `<Bleed>` block
 - `button` — highlight code inside or referenced by a `<Button>` element
 - `callout` — highlight code inside a GFM alert or `<Callout>` block
 - `cards` — highlight code inside a `<Cards>` grid
-- `code` — highlight fenced code blocks at the top level of the entry
 - `collapse` — highlight code inside a `<details>` block
 - `featurecard` — highlight code inside a `<FeatureCard>` or `<CardGrid>` block
 - `filetree` — highlight code inside a `<FileTree>` block
-- `footnotes` — highlight code inside footnote definitions
 - `hero` — highlight code inside a `<Hero>` landing block
-- `image` — highlight code referenced from an `<Image>` caption
-- `mermaid` — highlight code inside a fenced mermaid diagram
+- `image` — highlight code referenced from an `<Image>` caption, use `<!--mdx-component-{{uuid}}-->` wrapper
 - `steps` — highlight code inside a `<Steps>` block
-- `table` — highlight code inside table cells
 - `tabs` — highlight code inside a `<Tabs>` block
 - `var` — highlight code inside a `<Var>` inline reference
-- `video` — highlight code referenced from a `<Video>` caption
+- `video` — highlight code referenced from a `<Video>` caption, use `<!--mdx-component-{{uuid}}-->` wrapper
+
+#### Markdown/GFM Features
+
+- `code` — highlight fenced code blocks at the top level of the entry
+- `footnotes` — highlight code inside footnote definitions
+- `mermaid` — highlight code inside a fenced mermaid diagram
+- `table` — highlight code inside table cells
+
+#### Multiple Names
+
+Declare every name the entry uses. A post with fenced code, code inside a GFM alert, and code inside table cells declares all three:
+
+```yaml
+features:
+  syntax:
+    - callout
+    - code
+    - table
+```
 
 > [!IMPORTANT]
 > Unknown type or name in the `features` block fails the workflow. The error message names the offending `<type>:<name>` pair and the file path. Add an entry to the canonical list in `.github/actions/services/Bucket.js` before authoring against a name that doesn't exist yet.
 
 ## MDX Components
 
-MDX components add rich functionality (images, videos, custom widgets). They are wrapped in `<!--mdx-component-{{uuid}}-->` blocks so the workflow can lift them into the final MDX uploaded to R2.
+Blog entries support two MDX component patterns:
+
+- **Direct JSX** — components like `<Callout>`, `<Banner>`, `<Cards>`, `<Steps>`, `<Tabs>`, etc., are written directly in the entry body. The workflow passes them through unchanged. No wrapper needed.
+- **Wrapped JSX** — `<Image>` and `<Video>` use the `<!--mdx-component-{{uuid}}-->` wrapper so the source file remains valid markdown for GitHub's preview. The wrapper holds the production JSX (invisible to markdown renderers, since it's an HTML comment) while the `<!--mdx-strip-start-->...<!--mdx-strip-end-->` block holds a markdown link with the local repo path that GitHub renders correctly. The workflow strips the markdown block and lifts the JSX out before publishing.
 
 > [!IMPORTANT]
 > The `<!--mdx-->` HTML comments must be included exactly as shown. The UUID must be a valid v4 UUID — the workflow validates it and fails the run on malformed IDs.
