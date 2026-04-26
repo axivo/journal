@@ -249,7 +249,7 @@ class BucketService {
         }
       }
       if (pairs.length) {
-        metadata.features = pairs.sort().join(',');
+        metadata.features = JSON.stringify(pairs.sort());
       }
     }
     for (const [key, value] of Object.entries(metadata)) {
