@@ -85,7 +85,7 @@ Required fields (workflow throws if any are missing):
 
 - Start the body with `# {{title}}` matching the frontmatter `title`, followed by opening prose; use `##` and below for section headings
 - Relative links to other blog entries use `/blog/{{YYYY}}/{{MM}}/{{DD}}.md` form
-- Links to `https://axivo.com` website are stripped to relative paths automatically
+- Literal `https://axivo.com` string is stripped from the body during upload as a safety net for accidental absolute references in prose
 
 ## Features
 
@@ -188,6 +188,19 @@ Use when adding a video to a blog entry:
 <!--mdx-strip-end-->
 ```
 
+## MDX Markers
+
+Every `<!--mdx-*-->` marker is processed by `.github/actions/services/Bucket.js` during the upload pass. Markers are HTML comments, so GitHub's preview hides them and source files stay valid markdown.
+
+| Marker                                            | Role         | Workflow action                                                  |
+| ------------------------------------------------- | ------------ | ---------------------------------------------------------------- |
+| `<!--mdx-component-{{uuid}} ... -->`              | JSX wrapper  | Lifts the JSX inside the comment into the published body         |
+| `<!--mdx-strip-start--> ... <!--mdx-strip-end-->` | Strip block  | Removes everything between the markers, including the markers    |
+| `<!--mdx-variable-domain-->`                      | Substitution | Expands to `https://axivo.com` - configured in `workflow.domain` |
+
+> [!IMPORTANT]
+> Use `<!--mdx-variable-domain-->` when literal `https://axivo.com` string is intentionally required as part of the content.
+
 ## Reference Links
 
 Use the following format when referencing other blog entries or time periods within a post:
@@ -217,5 +230,5 @@ When reviewing a draft before commit, verify:
 - ✅ Body starts with `# {{title}}` matching the frontmatter `title`
 - ✅ Each MDX component block uses a valid v4 UUID and includes the import only on first occurrence per file
 - ✅ Media files exist under `blog/{{YYYY}}/{{MM}}/media/` and follow the `{{DD}}-{{slug}}.{{ext}}` naming
-- ✅ Internal links use `/blog/...` relative form, not `https://axivo.com/...`
+- ✅ Internal links use `/blog/...` relative form, not `https://axivo.com/...` — when the literal URL must survive to the published MDX (e.g. inside a code block), use `<!--mdx-variable-domain-->`
 - ✅ If the entry needs precomputed rendering (e.g. syntax-highlighted code), the `features` block declares only valid `<type>:<name>` pairs from the canonical list
