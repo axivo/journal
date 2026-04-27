@@ -125,15 +125,21 @@ features:
 
 Blog entries support two JSX component patterns:
 
-- **Direct JSX** — components like `<Callout>`, `<Banner>`, `<Cards>`, `<Steps>`, `<Tabs>`, etc., are written directly in the entry body. The workflow passes them through unchanged. No wrapper needed.
-- **Wrapped JSX** — `<Image>` and `<Video>` use the `<!--mdx-component-{{uuid}}-->` wrapper so the source file remains valid markdown for GitHub's preview. The wrapper holds the production JSX (invisible to markdown renderers, since it's an HTML comment) while the `<!--mdx-strip-start-->...<!--mdx-strip-end-->` block holds a markdown link with the local repo path that GitHub renders correctly. The workflow strips the markdown block and lifts the JSX out before publishing.
+- **Direct JSX** — components written directly in the entry body, no wrapper needed:
+  - Components like `<Callout>`, `<Banner>`, `<Cards>`, `<Steps>`, `<Tabs>`, etc.
+  - JSX lives inline inside the body
+  - Workflow passes them through unchanged to the published MDX
+- **Wrapped JSX** — `<Image>` and `<Video>` use a wrapper so the source file stays valid markdown for GitHub's preview:
+  - Production JSX lives inside `<!--mdx-component-{{uuid}}-->` — invisible to markdown renderers
+  - GitHub-friendly markdown link lives inside `<!--mdx-strip-start-->...<!--mdx-strip-end-->` so the local repo path renders correctly
+  - Workflow strips the markdown block and lifts the JSX out before publishing
 
 > [!IMPORTANT]
 > The `<!--mdx-->` HTML comments must be included exactly as shown. The UUID must be a valid v4 UUID — the workflow validates it and fails the run on malformed IDs.
 
-#### Image Insert
+#### Image Component Insert
 
-Use when adding an image to a blog entry:
+Use when adding a new `/media` image to a blog entry:
 
 ```markdown
 <!--mdx-component-{{uuid}}
@@ -150,9 +156,9 @@ Use when adding an image to a blog entry:
 <!--mdx-strip-end-->
 ```
 
-#### Video Insert
+#### Video Component Insert
 
-Use when adding a video to a blog entry:
+Use when adding a new `/media` video to a blog entry:
 
 ```markdown
 <!--mdx-component-{{uuid}}
