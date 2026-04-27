@@ -14,24 +14,7 @@ const blogPrefix = 'blog';
 const contentPrefix = 'src/content';
 const features = {
   syntax: [
-    'banner',
-    'bleed',
-    'button',
-    'callout',
-    'cards',
-    'code',
-    'collapse',
-    'featurecard',
-    'filetree',
-    'footnotes',
-    'hero',
-    'image',
-    'mermaid',
-    'steps',
-    'table',
-    'tabs',
-    'var',
-    'video'
+    'code'
   ]
 };
 const mediaPrefix = 'public';

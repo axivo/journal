@@ -85,78 +85,61 @@ Required fields (workflow throws if any are missing):
 
 - Start the body with `# {{title}}` matching the frontmatter `title`, followed by opening prose; use `##` and below for section headings
 - Relative links to other blog entries use `/blog/{{YYYY}}/{{MM}}/{{DD}}.md` form
-- Links to `https://axivo.com` website are stripped to relative paths automatically
+- Literal `https://axivo.com` string is stripped from the body during upload as a safety net for accidental absolute references in prose
 
 ## Features
 
-Some renderer work — shiki syntax highlighting today, math and diagram caches in the future — is too expensive to do per request and too volatile to ship in the bundle. Authors opt entries into precomputation by declaring features in frontmatter. The workflow validates each `<type>:<name>` against the canonical list and writes the validated set as R2 custom metadata. The website's prebuild expands declarations into precomputed data inline in the per-collection manifest. Entries without a `features` block produce no precomputed output and render with safe-mdx defaults.
-
-### Syntax
-
-Use when the entry contains code that should be syntax-highlighted with `shiki`:
+Blog entries can be enhanced with JSX Components and Markdown/GFM Features, they render out of the box. The only opt-in is `code` — declare it into frontmatter when the entry contains code that should be syntax-highlighted.
 
 <!-- prettier-ignore-start -->
 ```yaml
 features:
   syntax:
-    - {{ name }}
+    - {{name}}
 ```
 <!-- prettier-ignore-end -->
 
-The `syntax` type accepts the names listed below.
+| Component / Feature              | Usage                                                    | Name   |
+| -------------------------------- | -------------------------------------------------------- | ------ |
+| `<Banner>`                       | Highlight bar at the top of a section                    | -      |
+| `<Bleed>`                        | Full-width container that breaks out of the prose column | -      |
+| `<Button>`                       | Standalone or inline button element                      | -      |
+| `<Callout>` / GFM alert          | Note, tip, warning, caution, important, or quote callout | -      |
+| `<Cards>`                        | Grid of card links                                       | -      |
+| `<details>` / collapse           | Expandable details/summary block                         | -      |
+| `<FeatureCard>` / `<CardGrid>`   | Landing-page feature cards                               | -      |
+| `<FileTree>`                     | Visual file/directory tree                               | -      |
+| `<Hero>`                         | Landing-page hero block                                  | -      |
+| `<Image>` (wrapped JSX)          | Theme-aware image with optional caption                  | -      |
+| `<Steps>`                        | Numbered or bulleted step markers                        | -      |
+| `<Tabs>`                         | Tabbed content sections                                  | -      |
+| `<Var>`                          | Inline variable reference                                | -      |
+| `<Video>` (wrapped JSX)          | Plyr-backed media embed                                  | -      |
+| Fenced code blocks               | ` ```lang ` blocks anywhere in the entry                 | `code` |
+| Inline code with `{:lang}` hints | `` `npm install`{:shell} `` inline references            | `code` |
+| Footnotes                        | GFM footnote references and definitions                  | -      |
+| Mermaid diagrams                 | ` ```mermaid ` fences (rendered by `<Mermaid>`)          | -      |
+| Tables                           | GFM tables                                               | -      |
 
-#### JSX Components
+### JSX Components
 
-- `banner` — highlight code inside a `<Banner>` block
-- `bleed` — highlight code inside a `<Bleed>` block
-- `button` — highlight code inside or referenced by a `<Button>` element
-- `callout` — highlight code inside a GFM alert or `<Callout>` block
-- `cards` — highlight code inside a `<Cards>` grid
-- `collapse` — highlight code inside a `<details>` block
-- `featurecard` — highlight code inside a `<FeatureCard>` or `<CardGrid>` block
-- `filetree` — highlight code inside a `<FileTree>` block
-- `hero` — highlight code inside a `<Hero>` landing block
-- `image` — highlight code referenced from an `<Image>` caption, use `<!--mdx-component-{{uuid}}-->` wrapper
-- `steps` — highlight code inside a `<Steps>` block
-- `tabs` — highlight code inside a `<Tabs>` block
-- `var` — highlight code inside a `<Var>` inline reference
-- `video` — highlight code referenced from a `<Video>` caption, use `<!--mdx-component-{{uuid}}-->` wrapper
+Blog entries support two JSX component patterns:
 
-#### Markdown/GFM Features
-
-- `code` — highlight fenced code blocks at the top level of the entry
-- `footnotes` — highlight code inside footnote definitions
-- `mermaid` — highlight code inside a fenced mermaid diagram
-- `table` — highlight code inside table cells
-
-#### Multiple Names
-
-Declare every name the entry uses. A post with fenced code, code inside a GFM alert, and code inside table cells declares all three:
-
-```yaml
-features:
-  syntax:
-    - callout
-    - code
-    - table
-```
-
-> [!IMPORTANT]
-> Unknown type or name in the `features` block fails the workflow. The error message names the offending `<type>:<name>` pair and the file path. Add an entry to the canonical list in `.github/actions/services/Bucket.js` before authoring against a name that doesn't exist yet.
-
-## MDX Components
-
-Blog entries support two MDX component patterns:
-
-- **Direct JSX** — components like `<Callout>`, `<Banner>`, `<Cards>`, `<Steps>`, `<Tabs>`, etc., are written directly in the entry body. The workflow passes them through unchanged. No wrapper needed.
-- **Wrapped JSX** — `<Image>` and `<Video>` use the `<!--mdx-component-{{uuid}}-->` wrapper so the source file remains valid markdown for GitHub's preview. The wrapper holds the production JSX (invisible to markdown renderers, since it's an HTML comment) while the `<!--mdx-strip-start-->...<!--mdx-strip-end-->` block holds a markdown link with the local repo path that GitHub renders correctly. The workflow strips the markdown block and lifts the JSX out before publishing.
+- **Direct JSX** — components written directly in the entry body, no wrapper needed:
+  - Components like `<Callout>`, `<Banner>`, `<Cards>`, `<Steps>`, `<Tabs>`, etc.
+  - JSX lives inline inside the body
+  - Workflow passes them through unchanged to the published MDX
+- **Wrapped JSX** — `<Image>` and `<Video>` use a wrapper so the source file stays valid markdown for GitHub's preview:
+  - Production JSX lives inside `<!--mdx-component-{{uuid}}-->` — invisible to markdown renderers
+  - GitHub-friendly markdown link lives inside `<!--mdx-strip-start-->...<!--mdx-strip-end-->` so the local repo path renders correctly
+  - Workflow strips the markdown block and lifts the JSX out before publishing
 
 > [!IMPORTANT]
 > The `<!--mdx-->` HTML comments must be included exactly as shown. The UUID must be a valid v4 UUID — the workflow validates it and fails the run on malformed IDs.
 
-### MDX Image Insert
+#### Image Component Insert
 
-Use when adding an image to a blog entry:
+Use when adding a new `/media` image to a blog entry:
 
 ```markdown
 <!--mdx-component-{{uuid}}
@@ -173,9 +156,9 @@ Use when adding an image to a blog entry:
 <!--mdx-strip-end-->
 ```
 
-### MDX Video Insert
+#### Video Component Insert
 
-Use when adding a video to a blog entry:
+Use when adding a new `/media` video to a blog entry:
 
 ```markdown
 <!--mdx-component-{{uuid}}
@@ -187,6 +170,19 @@ Use when adding a video to a blog entry:
 
 <!--mdx-strip-end-->
 ```
+
+## MDX Markers
+
+Every `<!--mdx-*-->` marker is processed by `.github/actions/services/Bucket.js` during the upload pass. Markers are HTML comments, so GitHub's preview hides them and source files stay valid markdown.
+
+| Marker                                            | Role         | Workflow action                                                  |
+| ------------------------------------------------- | ------------ | ---------------------------------------------------------------- |
+| `<!--mdx-component-{{uuid}} ... -->`              | JSX wrapper  | Lifts the JSX inside the comment into the published body         |
+| `<!--mdx-strip-start--> ... <!--mdx-strip-end-->` | Strip block  | Removes everything between the markers, including the markers    |
+| `<!--mdx-variable-domain-->`                      | Substitution | Expands to `https://axivo.com` - configured in `workflow.domain` |
+
+> [!IMPORTANT]
+> Use `<!--mdx-variable-domain-->` when literal `https://axivo.com` string is intentionally required as part of the content.
 
 ## Reference Links
 
@@ -217,5 +213,5 @@ When reviewing a draft before commit, verify:
 - ✅ Body starts with `# {{title}}` matching the frontmatter `title`
 - ✅ Each MDX component block uses a valid v4 UUID and includes the import only on first occurrence per file
 - ✅ Media files exist under `blog/{{YYYY}}/{{MM}}/media/` and follow the `{{DD}}-{{slug}}.{{ext}}` naming
-- ✅ Internal links use `/blog/...` relative form, not `https://axivo.com/...`
+- ✅ Internal links use `/blog/...` relative form, not `https://axivo.com/...` — when the literal URL must survive to the published MDX (e.g. inside a code block), use `<!--mdx-variable-domain-->`
 - ✅ If the entry needs precomputed rendering (e.g. syntax-highlighted code), the `features` block declares only valid `<type>:<name>` pairs from the canonical list
