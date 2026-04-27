@@ -9,6 +9,7 @@ const { DeleteObjectCommand, DeleteObjectsCommand, ListObjectsV2Command, PutObje
 const { slug: githubSlug } = require('github-slugger');
 const { existsSync, readFileSync, readdirSync, statSync } = require('node:fs');
 const { basename, dirname, join } = require('node:path');
+const config = require('../config');
 const blogPrefix = 'blog';
 const contentPrefix = 'src/content';
 const features = {
@@ -166,6 +167,10 @@ class BucketService {
         throw new Error(`Invalid UUID "${match[1]}" in <!--mdx-component--> block (${filePath})`);
       }
     }
+    const domain = config.get('workflow.domain');
+    const variables = {
+      domain: `${domain.protocol}://${domain.name}`
+    };
     let entryContent = body;
     entryContent = entryContent.replace(/<!--mdx-strip-start-->[\s\S]*?<!--mdx-strip-end-->\n?/g, '');
     entryContent = entryContent.replace(/<!--mdx-component-[a-f0-9-]+\n([\s\S]*?)-->/g, (_, block) => block.trim());
@@ -173,6 +178,9 @@ class BucketService {
     entryContent = entryContent.replace(/(?<![\w.\/-])\/blog\/(\d{4})\/(\d{2})\/media\//g, `/${blogPrefix}/$1/$2/`);
     entryContent = entryContent.replace(/\n{3,}/g, '\n\n').trim();
     entryContent = entryContent.replace(/https:\/\/axivo\.com/g, '');
+    for (const [name, value] of Object.entries(variables)) {
+      entryContent = entryContent.replace(new RegExp(`<!--mdx-variable-${name}-->`, 'g'), value);
+    }
     return [{ frontmatter: fm, slug, title, body: entryContent }];
   }
 
