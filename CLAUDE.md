@@ -79,6 +79,7 @@ Required fields (workflow throws if any are missing):
 | `author`      | Plain string                            | `Floren Munteanu`                                                                   |
 | `source`      | URL                                     | Points back to this repo's file on `main`                                           |
 | `tags`        | YAML list of strings                    | Hyphens in tags are converted to underscores by the workflow                        |
+| `features`    | YAML map of `type: [name]` lists        | Optional - declares precomputed renderer features for this entry                    |
 
 ### Body Rules
 
@@ -86,9 +87,69 @@ Required fields (workflow throws if any are missing):
 - Relative links to other blog entries use `/blog/{{YYYY}}/{{MM}}/{{DD}}.md` form
 - Links to `https://axivo.com` website are stripped to relative paths automatically
 
+## Features
+
+Some renderer work — shiki syntax highlighting today, math and diagram caches in the future — is too expensive to do per request and too volatile to ship in the bundle. Authors opt entries into precomputation by declaring features in frontmatter. The workflow validates each `<type>:<name>` against the canonical list and writes the validated set as R2 custom metadata. The website's prebuild expands declarations into precomputed data inline in the per-collection manifest. Entries without a `features` block produce no precomputed output and render with safe-mdx defaults.
+
+### Syntax
+
+Use when the entry contains code that should be syntax-highlighted with `shiki`:
+
+<!-- prettier-ignore-start -->
+```yaml
+features:
+  syntax:
+    - {{ name }}
+```
+<!-- prettier-ignore-end -->
+
+The `syntax` type accepts the names listed below.
+
+#### JSX Components
+
+- `banner` — highlight code inside a `<Banner>` block
+- `bleed` — highlight code inside a `<Bleed>` block
+- `button` — highlight code inside or referenced by a `<Button>` element
+- `callout` — highlight code inside a GFM alert or `<Callout>` block
+- `cards` — highlight code inside a `<Cards>` grid
+- `collapse` — highlight code inside a `<details>` block
+- `featurecard` — highlight code inside a `<FeatureCard>` or `<CardGrid>` block
+- `filetree` — highlight code inside a `<FileTree>` block
+- `hero` — highlight code inside a `<Hero>` landing block
+- `image` — highlight code referenced from an `<Image>` caption, use `<!--mdx-component-{{uuid}}-->` wrapper
+- `steps` — highlight code inside a `<Steps>` block
+- `tabs` — highlight code inside a `<Tabs>` block
+- `var` — highlight code inside a `<Var>` inline reference
+- `video` — highlight code referenced from a `<Video>` caption, use `<!--mdx-component-{{uuid}}-->` wrapper
+
+#### Markdown/GFM Features
+
+- `code` — highlight fenced code blocks at the top level of the entry
+- `footnotes` — highlight code inside footnote definitions
+- `mermaid` — highlight code inside a fenced mermaid diagram
+- `table` — highlight code inside table cells
+
+#### Multiple Names
+
+Declare every name the entry uses. A post with fenced code, code inside a GFM alert, and code inside table cells declares all three:
+
+```yaml
+features:
+  syntax:
+    - callout
+    - code
+    - table
+```
+
+> [!IMPORTANT]
+> Unknown type or name in the `features` block fails the workflow. The error message names the offending `<type>:<name>` pair and the file path. Add an entry to the canonical list in `.github/actions/services/Bucket.js` before authoring against a name that doesn't exist yet.
+
 ## MDX Components
 
-MDX components add rich functionality (images, videos, custom widgets). They are wrapped in `<!--mdx-component-{{uuid}}-->` blocks so the workflow can lift them into the final MDX and hoist any `import` statements to the top of the file.
+Blog entries support two MDX component patterns:
+
+- **Direct JSX** — components like `<Callout>`, `<Banner>`, `<Cards>`, `<Steps>`, `<Tabs>`, etc., are written directly in the entry body. The workflow passes them through unchanged. No wrapper needed.
+- **Wrapped JSX** — `<Image>` and `<Video>` use the `<!--mdx-component-{{uuid}}-->` wrapper so the source file remains valid markdown for GitHub's preview. The wrapper holds the production JSX (invisible to markdown renderers, since it's an HTML comment) while the `<!--mdx-strip-start-->...<!--mdx-strip-end-->` block holds a markdown link with the local repo path that GitHub renders correctly. The workflow strips the markdown block and lifts the JSX out before publishing.
 
 > [!IMPORTANT]
 > The `<!--mdx-->` HTML comments must be included exactly as shown. The UUID must be a valid v4 UUID — the workflow validates it and fails the run on malformed IDs.
@@ -99,7 +160,6 @@ Use when adding an image to a blog entry:
 
 ```markdown
 <!--mdx-component-{{uuid}}
-import { Image } from "@axivo/website";
 <Image
   template="card"
   src="/blog/{{YYYY}}/{{MM}}/{{DD}}-{{image-title-slug}}.webp"
@@ -113,16 +173,12 @@ import { Image } from "@axivo/website";
 <!--mdx-strip-end-->
 ```
 
-> [!IMPORTANT]
-> For multiple image inserts in the same file, include the `import` statement only on the first one.
-
 ### MDX Video Insert
 
 Use when adding a video to a blog entry:
 
 ```markdown
 <!--mdx-component-{{uuid}}
-import { Video } from "@axivo/website";
 <Video src="/blog/{{YYYY}}/{{MM}}/{{DD}}-{{video-title-slug}}.mp4" />
 -->
 <!--mdx-strip-start-->
@@ -131,9 +187,6 @@ import { Video } from "@axivo/website";
 
 <!--mdx-strip-end-->
 ```
-
-> [!IMPORTANT]
-> For multiple video inserts in the same file, include the `import` statement only on the first one.
 
 ## Reference Links
 
@@ -165,3 +218,4 @@ When reviewing a draft before commit, verify:
 - ✅ Each MDX component block uses a valid v4 UUID and includes the import only on first occurrence per file
 - ✅ Media files exist under `blog/{{YYYY}}/{{MM}}/media/` and follow the `{{DD}}-{{slug}}.{{ext}}` naming
 - ✅ Internal links use `/blog/...` relative form, not `https://axivo.com/...`
+- ✅ If the entry needs precomputed rendering (e.g. syntax-highlighted code), the `features` block declares only valid `<type>:<name>` pairs from the canonical list

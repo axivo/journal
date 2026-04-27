@@ -9,8 +9,30 @@ const { DeleteObjectCommand, DeleteObjectsCommand, ListObjectsV2Command, PutObje
 const { slug: githubSlug } = require('github-slugger');
 const { existsSync, readFileSync, readdirSync, statSync } = require('node:fs');
 const { basename, dirname, join } = require('node:path');
-const contentPrefix = 'src/content';
 const blogPrefix = 'blog';
+const contentPrefix = 'src/content';
+const features = {
+  syntax: [
+    'banner',
+    'bleed',
+    'button',
+    'callout',
+    'cards',
+    'code',
+    'collapse',
+    'featurecard',
+    'filetree',
+    'footnotes',
+    'hero',
+    'image',
+    'mermaid',
+    'steps',
+    'table',
+    'tabs',
+    'var',
+    'video'
+  ]
+};
 const mediaPrefix = 'public';
 
 /**
@@ -48,12 +70,7 @@ class BucketService {
    * @returns {string} MDX content body
    */
   buildMdx(entry) {
-    const parts = [];
-    if (entry.imports) {
-      parts.push(entry.imports, '');
-    }
-    parts.push(entry.body, '');
-    return parts.join('\n');
+    return `${entry.body}\n`;
   }
 
   /**
@@ -127,7 +144,7 @@ class BucketService {
    *
    * @param {string} content - Raw blog file content
    * @param {string} filePath - Path to blog file for error reporting
-   * @returns {Array<{ frontmatter: string, slug: string, title: string, body: string, imports: string }>}
+   * @returns {Array<{ frontmatter: string, slug: string, title: string, body: string }>}
    */
   extractEntries(content, filePath) {
     const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---\n?/);
@@ -151,28 +168,12 @@ class BucketService {
     }
     let entryContent = body;
     entryContent = entryContent.replace(/<!--mdx-strip-start-->[\s\S]*?<!--mdx-strip-end-->\n?/g, '');
-    let imports = '';
-    entryContent = entryContent.replace(/<!--mdx-component-[a-f0-9-]+\n([\s\S]*?)-->/g, (_, block) => {
-      const lines = block.trim().split('\n');
-      const importLines = [];
-      const componentLines = [];
-      for (const line of lines) {
-        if (line.startsWith('import ')) {
-          importLines.push(line);
-        } else {
-          componentLines.push(line);
-        }
-      }
-      if (importLines.length) {
-        imports += importLines.join('\n') + '\n';
-      }
-      return componentLines.join('\n');
-    });
-    entryContent = entryContent.replace(/\/blog\/(\d{4})\/(\d{2})\/(\d{2})\.md/g, `/${blogPrefix}/$1/$2/$3`);
-    entryContent = entryContent.replace(/\/blog\/(\d{4})\/(\d{2})\/media\//g, `/${blogPrefix}/$1/$2/`);
+    entryContent = entryContent.replace(/<!--mdx-component-[a-f0-9-]+\n([\s\S]*?)-->/g, (_, block) => block.trim());
+    entryContent = entryContent.replace(/(?<![\w.\/-])\/blog\/(\d{4})\/(\d{2})\/(\d{2})\.md/g, `/${blogPrefix}/$1/$2/$3`);
+    entryContent = entryContent.replace(/(?<![\w.\/-])\/blog\/(\d{4})\/(\d{2})\/media\//g, `/${blogPrefix}/$1/$2/`);
     entryContent = entryContent.replace(/\n{3,}/g, '\n\n').trim();
     entryContent = entryContent.replace(/https:\/\/axivo\.com/g, '');
-    return [{ frontmatter: fm, slug, title, body: entryContent, imports: imports.trim() }];
+    return [{ frontmatter: fm, slug, title, body: entryContent }];
   }
 
   /**
@@ -188,7 +189,7 @@ class BucketService {
     const lines = frontmatter.split('\n');
     for (const line of lines) {
       const match = line.match(/^(\w+): (.+)$/);
-      if (match && !['description', 'tags'].includes(match[1])) {
+      if (match && !['description', 'features', 'tags'].includes(match[1])) {
         metadata[match[1]] = match[2];
       }
     }
@@ -205,6 +206,30 @@ class BucketService {
     const descriptionMatch = frontmatter.match(/description: >-\n\s+(.+)/);
     if (descriptionMatch) {
       metadata.description = encodeURIComponent(descriptionMatch[1]);
+    }
+    const featuresMatch = frontmatter.match(/^features:\n((?:\s+.+\n?)+)/m);
+    if (featuresMatch) {
+      const pairs = [];
+      const typeBlocks = featuresMatch[1].matchAll(/^\s+(\w+):\n((?:\s+- .+\n?)+)/gm);
+      for (const typeMatch of typeBlocks) {
+        const type = typeMatch[1];
+        const names = typeMatch[2].trim().split('\n').map(n => n.replace(/^\s*-\s*/, '').trim());
+        if (!features[type]) {
+          throw new Error(`Unknown feature type '${type}:${names[0]}' in '${filePath}' entry`);
+        }
+        for (const name of names) {
+          if (!features[type].includes(name)) {
+            throw new Error(`Unknown feature name '${type}:${name}' in '${filePath}' entry`);
+          }
+          const pair = `${type}:${name}`;
+          if (!pairs.includes(pair)) {
+            pairs.push(pair);
+          }
+        }
+      }
+      if (pairs.length) {
+        metadata.features = JSON.stringify(pairs.sort());
+      }
     }
     for (const [key, value] of Object.entries(metadata)) {
       if (value.length > 2048) {
