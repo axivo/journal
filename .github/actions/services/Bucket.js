@@ -18,6 +18,7 @@ const features = {
     'code'
   ]
 };
+const mediaCacheAge = 31536000;
 const mediaPrefix = 'public';
 
 /**
@@ -313,13 +314,17 @@ class BucketService {
    * @returns {Promise<boolean>} Success
    */
   async upload(key, body, contentType = 'text/plain', metadata = {}) {
-    await this.s3.send(new PutObjectCommand({
+    const params = {
       Bucket: this.bucket,
-      Key: key,
       Body: body,
       ContentType: contentType,
+      Key: key,
       Metadata: metadata
-    }));
+    };
+    if (key.startsWith(`${mediaPrefix}/`)) {
+      params.CacheControl = `public, max-age=${mediaCacheAge}, immutable`;
+    }
+    await this.s3.send(new PutObjectCommand(params));
     return true;
   }
 
