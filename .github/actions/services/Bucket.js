@@ -268,9 +268,10 @@ class BucketService {
    * Uploads media files associated with a blog date directory.
    *
    * @param {string} filePath - Path to blog .md file
+   * @param {Set<string>} [uploadedMedia] - Keys already uploaded, to avoid duplicates
    * @returns {Promise<number>} Number of media files uploaded
    */
-  async processMedia(filePath) {
+  async processMedia(filePath, uploadedMedia = new Set()) {
     const date = this.extractDate(filePath);
     if (!date) {
       return 0;
@@ -286,9 +287,13 @@ class BucketService {
         continue;
       }
       const key = `${mediaPrefix}/${blogPrefix}/${date.year}/${date.month}/${entry}`;
+      if (uploadedMedia.has(key)) {
+        continue;
+      }
       const body = readFileSync(fullPath);
       await this.upload(key, body, mime.lookup(entry) || 'application/octet-stream');
       this.logger.info(`Uploaded ${key} (${body.length} bytes)`);
+      uploadedMedia.add(key);
       count++;
     }
     return count;
@@ -332,17 +337,22 @@ class BucketService {
    * Uploads a single media R2 object derived from a blog media file path
    *
    * @param {string} filePath - Path like blog/2025/12/media/14-first-light.webp
+   * @param {Set<string>} [uploadedMedia] - Keys already uploaded, to avoid duplicates
    * @returns {Promise<number>} 1 if uploaded, 0 otherwise
    */
-  async uploadMedia(filePath) {
+  async uploadMedia(filePath, uploadedMedia = new Set()) {
     const match = filePath.match(/blog\/(\d{4})\/(\d{2})\/media\/(.+)$/);
     if (!match) {
       return 0;
     }
     const key = `${mediaPrefix}/${blogPrefix}/${match[1]}/${match[2]}/${match[3]}`;
+    if (uploadedMedia.has(key)) {
+      return 0;
+    }
     const body = readFileSync(filePath);
     await this.upload(key, body, mime.lookup(match[3]) || 'application/octet-stream');
     this.logger.info(`Uploaded ${key} (${body.length} bytes)`);
+    uploadedMedia.add(key);
     return 1;
   }
 }
